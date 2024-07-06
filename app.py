@@ -31,13 +31,16 @@ def get_key_output(key, value):
 
 def predict(message, history):
     history_langchain_format = []
-    # print(f"History: {pprint.pformat(history)}")
     for human, ai in history:
         if human:
-            history_langchain_format.append(HumanMessage(content=human))
-        elif ai:
-            history_langchain_format.append(AIMessage(content=ai))
-    history_langchain_format.append(HumanMessage(content=message))
+            if '.jpg' not in human and '.png' not in human and '.jpeg' not in human:
+                history_langchain_format.append(HumanMessage(content=human[0]))
+        if ai:
+            history_langchain_format.append(AIMessage(content=ai[0]))
+    if message['files']:
+        img_msg = HumanMessage(content=message['text'], additional_kwargs={'image':message['files'][0]})
+        history_langchain_format.append(img_msg)
+    else: history_langchain_format.append(HumanMessage(content=message['text']))
     inputs = {"messages": history_langchain_format}
     # return agentic_rag_graph.invoke(inputs)['messages'][-1].content
     partial_message = ""
@@ -51,8 +54,9 @@ def predict(message, history):
     yield final_answer
 
 # gr.ChatInterface(predict).queue().launch()
-chatbot = gr.Chatbot([[None,"Hello Ishwar! Thank you for purchasing the STIHL FS120 Brush Cutter. I am Suhani, your customer assistant. If you need any help regarding the FS120 as well as STIHL products, feel free to ask me."]])
-ci = gr.ChatInterface(predict,chatbot=chatbot, examples=["Hi I need to service my brush cutter how can I service it?", "Please suggest a suitable accessory for trimmer grass in residential area."], title="Personal Product Assistant").queue().launch()
+chatbot = gr.Chatbot([[None,"Hello Ishwar! Thank you for purchasing the STIHL FS120 Brush Cutter. I am Suhani, your customer assistant. I can help you make best use of your product of you can provide me picture of your lawn, or If you need any help regarding the product as well as STIHL products, feel free to ask me."]])
+examples=[{"text":"lawn image", "files":["data/images/lawn_image.jpg"]},{"text": "How can I service my machine?"}]
+ci = gr.ChatInterface(predict,chatbot=chatbot, examples=examples, title="Personal Product Assistant", multimodal=True).queue().launch()
 
 with gr.Blocks(fill_height=True) as demo:
     ci.render()

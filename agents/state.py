@@ -1,4 +1,4 @@
-from typing import Annotated, Sequence, TypedDict, Optional
+from typing import Annotated, Sequence, TypedDict, Optional, List
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -13,4 +13,6 @@ class AgentState(TypedDict):
     query: str
     context: str
     generation: str
+    img_description: str
+    img_tags: List[str]
     lang_code: Annotated[str, langcodes.tag_parser.parse_tag]

@@ -41,6 +41,20 @@ agent_system_prompt = PromptTemplate(
 6. Maintain a professional and knowledgeable tone when responding to queries within your area of expertise."""
 )
 
+image_prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "user",
+                [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/jpeg;base64,{image_data}"},
+                    }
+                ],
+            ),
+        ]
+    )
+
 # Prompt
 summarize_chain_prompt_text = """You are an assistant tasked with summarizing tables and text. \n 
 If the given element is table look at its column names to infer what type of listing it might be. \n

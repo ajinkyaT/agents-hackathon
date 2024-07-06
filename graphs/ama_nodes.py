@@ -12,8 +12,10 @@ from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
 from tools.retriever_tool import RetrieverTool
 from utils.ingest_data import VectorDB
-from prompts.rag_prompt import rag_prompt, agent_system_prompt, grader_prompt, hallucination_grade_prompt, answer_grade_prompt, translate_answer_prompt, parse_langcode_prompt
-from entities.node_entities import GradeDocuments, GradeHallucinations, GradeAnswer, ParseLangCode
+from utils.convert_img import get_image_base64
+from utils.get_accessories import get_accessories_table
+from prompts.rag_prompt import rag_prompt, agent_system_prompt, grader_prompt, hallucination_grade_prompt, answer_grade_prompt, translate_answer_prompt, parse_langcode_prompt, image_prompt
+from entities.node_entities import GradeDocuments, GradeHallucinations, GradeAnswer, ParseLangCode, ImageTags
 import pprint
 
 ### Edges
@@ -24,6 +26,51 @@ tools = [grass_cutter_tool.get_tool()]
 from langgraph.prebuilt import ToolExecutor
 
 tool_executor = ToolExecutor(tools)
+
+def decide_img_branch(state):
+    """
+    Determines whether the divert to get_img_reco or agent.
+
+    Args:
+        state (messages): The current state
+
+    Returns:
+        str: Binary 'agent' or 'img_reco'
+    """
+    init_msg = state['messages'][-1]
+    if isinstance(init_msg, HumanMessage):
+        if init_msg.additional_kwargs.get('image'):
+            return 'img_reco'
+        else:
+            return 'agent'
+    else:
+        return 'agent'
+    
+def get_img_reco(state):
+    """
+    Determines whether the divert to get_img_recommendation or agent.
+
+    Args:
+        state (messages): The current state
+
+    Returns:
+        str: Binary 'agent' or 'img_reco'
+    """
+    img_msg = state['messages'][-1]
+    image_data = get_image_base64(img_msg.additional_kwargs["image"])
+    llm = ChatOpenAI(temperature=0, model="gpt-4o", streaming=True)
+    structured_llm_grader = llm.with_structured_output(ImageTags)
+    img_parser = image_prompt | structured_llm_grader
+    output = img_parser.invoke(image_data)
+    img_tags = output.extracted_tags
+    img_decription = output.image_description
+    query = f"Suggest me product accessories from given documents where one or more Tags in products contains in the list {img_tags}"
+    accessories = get_accessories_table()
+    context_docs = AIMessage(content=accessories)
+    print(f"identified tags: {img_tags}")
+    return {'messages': [context_docs], 'query': query, 'img_description': img_decription, "lang_code":'en'}
+    
+    
 
 def parse_input_question(state):
     """
@@ -87,8 +134,6 @@ def grade_documents(state):
         print(score)
         return "rewrite"
 
-
-### Nodes
 
 
 def agent(state):
@@ -181,14 +226,14 @@ def generate(state):
     messages = state["messages"]
     question = state['query']
     docs = messages[-1]
-    print(f"Got context for generation: {docs}")
+    print(f"Got query for generation: {question}")
 
     # Prompt
     prompt = rag_prompt
 
     # LLM
     # llm = ChatOpenAI(model_name="gpt-4o", temperature=0, streaming=True)
-    llm = ChatGroq(model_name="llama3-70b-8192", temperature=0.2, streaming=False)
+    llm = ChatGroq(model_name="llama3-70b-8192", temperature=0, streaming=False)
     # llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)
 
 
@@ -196,7 +241,7 @@ def generate(state):
     rag_chain = prompt | llm
 
     # Run
-    response = rag_chain.invoke({"documents": docs, "question": question})
+    response = rag_chain.invoke({"documents": docs.content, "question": question})
     return {"messages": [response], "generation": response.content, "context":docs}
 
 def grade_generation_v_documents_and_question(state):
