@@ -1,7 +1,7 @@
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 from agents.state import AgentState
-from graphs.nodes import agent, grade_documents, rewrite, generate, parse_input_question, grade_generation_v_documents_and_question, translate_answer, tools
+from graphs.ama_nodes import agent, grade_documents, rewrite, generate, parse_input_question, grade_generation_v_documents_and_question, translate_answer, tools
 
 # Define a new graph
 workflow = StateGraph(AgentState)
