@@ -63,9 +63,12 @@ def get_img_reco(state):
     img_parser = image_prompt | structured_llm_grader
     output = img_parser.invoke(image_data)
     img_tags = output.extracted_tags
+    if not img_tags:
+        return {'next_step': "END"}
     img_decription = output.image_description
-    query = f"Suggest me product accessories from given documents where one or more Tags in products contains in the list {img_tags}"
-    accessories = get_accessories_table()
+    query = f"Suggest me product accessories from given documents where one or more Tags in products contains in the list {img_tags} \n Start answer by mentioning it seems like your lawn seems to have grass type mentioned in the tags list. Do not mention the word tags it is  only for your reference."
+    # mocking API request
+    accessories = get_accessories_table() + f"\n source_file: product_accessories.csv"
     context_docs = AIMessage(content=accessories)
     print(f"identified tags: {img_tags}")
     return {'messages': [context_docs], 'query': query, 'img_description': img_decription, "lang_code":'en'}
@@ -223,6 +226,9 @@ def generate(state):
          dict: The updated state with re-phrased question
     """
     print("---GENERATE---")
+    if state['next_step'] == 'END':
+        ai_message = AIMessage(content='It seems like the provided image does not contain lawn or grass, please provide a relevant image.')
+        return {'context': None, 'messages': [ai_message]}
     messages = state["messages"]
     question = state['query']
     docs = messages[-1]
@@ -259,6 +265,8 @@ def grade_generation_v_documents_and_question(state):
     question = state["query"]
     documents = state["context"]
     generation = state["generation"]
+    if not documents:
+        return 'useful'
     # llm = ChatOpenAI(model_name="gpt-4o", temperature=0, streaming=True)
     # llm = ChatGroq(model_name="llama3-70b-8192", temperature=0, streaming=False)
     llm = ChatGroq(temperature=0, model="gemma2-9b-it", streaming=False)

@@ -16,3 +16,4 @@ class AgentState(TypedDict):
     img_description: str
     img_tags: List[str]
     lang_code: Annotated[str, langcodes.tag_parser.parse_tag]
+    next_step: str

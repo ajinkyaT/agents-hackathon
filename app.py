@@ -24,8 +24,8 @@ def get_key_output(key, value):
     elif key == 'rewrite':
         return f"Rewriting user question as: {value['messages'][0].content} \n"
     elif key == 'translate_answer':
-        return "Translating answer to user's langauge ...✅"
-    return f"Processing at step: {key} \n"
+        return "Translating answer to user's langauge ...✅ \n"
+    return f"Processing at step: {key} ...✅\n"
     
 
 
