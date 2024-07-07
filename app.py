@@ -54,7 +54,8 @@ def predict(message, history):
     yield final_answer
 
 # gr.ChatInterface(predict).queue().launch()
-chatbot = gr.Chatbot([[None,"Hello Ishwar! Thank you for purchasing the STIHL FS120 Brush Cutter. I am Suhani, your customer assistant. I can help you make best use of your product of you can provide me picture of your lawn, or If you need any help regarding the product as well as STIHL products, feel free to ask me."]])
+first_message = [[None,"Hello Ishwar! Thank you for purchasing the STIHL FS120 Brush Cutter. I am Suhani, your customer assistant. I can help you make best use of your product of you can provide me picture of your lawn, or If you need any help regarding the product as well as STIHL products, feel free to ask me."]]
+chatbot = gr.Chatbot(first_message)
 examples=[{"text":"lawn image", "files":["data/images/lawn_image.jpg"]},{"text": "How can I service my machine?"}]
 ci = gr.ChatInterface(predict,chatbot=chatbot, examples=examples, title="Personal Product Assistant", multimodal=True).queue().launch()
 
